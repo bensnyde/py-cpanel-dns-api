@@ -1,4 +1,4 @@
 py-cpanel-dns-api
 =================
 
-Python Cpanel DNS JSON API
+Python Cpanel DNS JSON API Library
