@@ -14,11 +14,27 @@ import base64
 import httplib
 import json
 import logging
+import socket
 
 # Log handler
 apilogger = "apilogger"
 
 class Cpanel:
+    def __init__(self, whm_base_url, whm_username, whm_password):
+        """Constructor
+
+            Cpanel FTP library public constructor.
+
+        Parameters
+            whm_base_url: str whm base url (ex. whm.example.com)
+            whm_username: str whm root username
+            whm_password: str whm password
+        """
+        self.whm_base_url = whm_base_url
+        self.whm_username = whm_username
+        self.whm_password = whm_password
+
+
     def _whm_api_query(self, query):
         """Query API
 
@@ -30,17 +46,21 @@ class Cpanel:
             json decoded response from remote server
         """
         try:
-            conn = httplib.HTTPSConnection(WHMURL, 2087)
-            conn.request('GET', '/json-api/%s' % query, headers={'Authorization':'Basic ' + base64.b64encode(WHMROOT+':'+WHMPASS).decode('ascii')})
+            conn = httplib.HTTPSConnection(self.whm_base_url, 2087)
+            conn.request('GET', '/json-api/%s' % query, headers={'Authorization':'Basic ' + base64.b64encode(self.whm_username+':'+self.whm_password).decode('ascii')})
             response = conn.getresponse()
             data = json.loads(response.read())
             conn.close()
 
             return data
         except httplib.HTTPException as ex:
-            logging.getLogger(apilogger).error("HTTPException from CpanelDNS API: %s" % ex)
+            logging.getLogger(apilogger).critical("HTTPException from CpanelDNS API: %s" % ex)
+        except socket.error as ex:
+            logging.getLogger(apilogger).critical("Socket.error connecting to CpanelDNS API: %s" % ex)
+        except ValueError as ex:
+            logging.getLogger(apilogger).critical("ValueError decoding CpanelDNS API response string: %s" % ex)
         except Exception as ex:
-            logging.getLogger(apilogger).error("Failed to query CpanelDNS API: %s" % ex)
+            logging.getLogger(apilogger).critical("Unhandled Exception while querying CpanelDNS API: %s" % ex)
 
 
     def add_zone(self, domain, ip, trueowner=None):
